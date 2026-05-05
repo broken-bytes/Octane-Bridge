@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish single-file exe (win-x64)
+        run: |
+          dotnet publish OctaneBridge.csproj \
+            -c Release \
+            -r win-x64 \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:EnableCompressionInSingleFile=true \
+            -p:DebugType=embedded \
+            -o publish
+
+      - name: Package release zip
+        run: |
+          cd publish
+          zip -j ../OctaneBridge-${{ github.ref_name }}-win-x64.zip OctaneBridge.exe app.ini
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: OctaneBridge-${{ github.ref_name }}-win-x64.zip
+          generate_release_notes: true
