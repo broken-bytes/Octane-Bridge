@@ -24,7 +24,16 @@ public enum EventType
 
 public enum StatFeedEventType
 {
-    Demolish = 0
+    Demolish,
+    Shot,
+    Goal,
+    LongGoal,
+    HatTrick,
+    Save,
+    EpicSave,
+    Savior,
+    Assist,
+    Playmaker,
 }
 
 public class Event

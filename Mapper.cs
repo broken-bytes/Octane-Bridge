@@ -88,6 +88,15 @@ public static class Mapper
         var stat = r.Data.EventName switch
         {
             "Demolish" => (StatFeedEventType?)StatFeedEventType.Demolish,
+            "Shot" => StatFeedEventType.Shot,
+            "Goal" => StatFeedEventType.Goal,
+            "LongGoal" => StatFeedEventType.LongGoal,
+            "HatTrick" => StatFeedEventType.HatTrick,
+            "Save" => StatFeedEventType.Save,
+            "EpicSave" => StatFeedEventType.EpicSave,
+            "Savior" => StatFeedEventType.Savior,
+            "Assist" => StatFeedEventType.Assist,
+            "Playmaker" => StatFeedEventType.Playmaker,
             _ => null
         };
         if (stat is null) return null;
