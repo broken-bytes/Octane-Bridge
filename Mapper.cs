@@ -11,6 +11,7 @@ public static class Mapper
 {
     public const string EventsChannel = "/events";
     public const string StateChannel = "/state";
+    public const string MetaChannel = "/meta";
 
     public static MappedMessage? Map(RawMessage raw)
     {

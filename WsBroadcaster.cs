@@ -9,10 +9,22 @@ public sealed class WsBroadcaster
 {
     private readonly ConcurrentDictionary<Guid, ClientEntry> _clients = new();
     private readonly HashSet<string> _channels;
+    private readonly Dictionary<string, Func<HttpListenerContext, CancellationToken, Task>> _httpHandlers = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<byte[]?>> _initialMessages = new(StringComparer.Ordinal);
 
     public WsBroadcaster(IEnumerable<string> channels)
     {
         _channels = new HashSet<string>(channels, StringComparer.Ordinal);
+    }
+
+    public void SetHttpHandler(string path, Func<HttpListenerContext, CancellationToken, Task> handler)
+    {
+        _httpHandlers[path] = handler;
+    }
+
+    public void SetInitialMessage(string channel, Func<byte[]?> provider)
+    {
+        _initialMessages[channel] = provider;
     }
 
     private sealed class ClientEntry
@@ -40,21 +52,47 @@ public sealed class WsBroadcaster
 
             var path = ctx.Request.Url?.AbsolutePath ?? "/";
 
-            if (!_channels.Contains(path))
+            if (ctx.Request.IsWebSocketRequest)
             {
-                ctx.Response.StatusCode = 404;
-                ctx.Response.Close();
+                if (_channels.Contains(path))
+                    _ = HandleClientAsync(ctx, path, ct);
+                else
+                {
+                    ctx.Response.StatusCode = 404;
+                    ctx.Response.Close();
+                }
                 continue;
             }
 
-            if (!ctx.Request.IsWebSocketRequest)
+            if (_httpHandlers.TryGetValue(path, out var handler))
             {
-                ctx.Response.StatusCode = 400;
-                ctx.Response.Close();
+                _ = SafeRunHttpHandlerAsync(handler, ctx, ct);
                 continue;
             }
 
-            _ = HandleClientAsync(ctx, path, ct);
+            ctx.Response.StatusCode = 404;
+            ctx.Response.Close();
+        }
+    }
+
+    private static async Task SafeRunHttpHandlerAsync(
+        Func<HttpListenerContext, CancellationToken, Task> handler,
+        HttpListenerContext ctx,
+        CancellationToken ct)
+    {
+        try
+        {
+            await handler(ctx, ct);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[ws] http handler failed: {ex.Message}");
+            try
+            {
+                ctx.Response.StatusCode = 500;
+                ctx.Response.Close();
+            }
+            catch { }
         }
     }
 
@@ -72,6 +110,24 @@ public sealed class WsBroadcaster
         var id = Guid.NewGuid();
         _clients[id] = entry;
         Console.WriteLine($"[ws] client connected to {channel} ({_clients.Count} total)");
+
+        if (_initialMessages.TryGetValue(channel, out var provider))
+        {
+            var bytes = provider();
+            if (bytes is not null)
+            {
+                await entry.SendLock.WaitAsync(ct);
+                try
+                {
+                    await entry.Socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"[ws] initial send failed: {ex.Message}");
+                }
+                finally { entry.SendLock.Release(); }
+            }
+        }
 
         var buf = new byte[1024];
         try

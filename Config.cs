@@ -2,11 +2,12 @@ using System.IO;
 
 namespace OctaneBridge;
 
-public sealed record BridgeConfig(int Port, int WsPort);
+public sealed record BridgeConfig(int Port, int WsPort, string MetaFile);
 
 public static class Config
 {
     private const string FileName = "app.ini";
+    private const string DefaultMetaFile = "meta.json";
 
     public static BridgeConfig Load()
     {
@@ -29,6 +30,7 @@ public static class Config
             throw new InvalidOperationException($"Missing or invalid PORT in {path}");
 
         var wsPort = values.TryGetValue("WS_PORT", out var ws) && int.TryParse(ws, out var p) ? p : 8080;
-        return new BridgeConfig(port, wsPort);
+        var metaFile = values.TryGetValue("META_FILE", out var mf) && mf.Length > 0 ? mf : DefaultMetaFile;
+        return new BridgeConfig(port, wsPort, metaFile);
     }
 }
