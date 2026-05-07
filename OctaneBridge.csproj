@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>OctaneBridge</RootNamespace>
+    <ApplicationIcon>octane_compressed_pictogram.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
