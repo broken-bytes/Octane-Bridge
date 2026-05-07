@@ -105,7 +105,10 @@ tcp.OnMessage += raw =>
     try
     {
         var mapped = Mapper.Map(raw);
-        if (mapped is not null) queue.Writer.TryWrite(mapped);
+        if (mapped is not null)
+        {
+            queue.Writer.TryWrite(mapped);
+        }
     }
     catch (Exception ex)
     {

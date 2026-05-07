@@ -82,8 +82,14 @@ public sealed class TcpReader
                     continue;
                 }
 
-                if (b == (byte)'"') inString = true;
-                else if (b == (byte)'{') depth++;
+                if (b == (byte)'"')
+                {
+                    inString = true;
+                }
+                else if (b == (byte)'{')
+                {
+                    depth++;
+                }
                 else if (b == (byte)'}')
                 {
                     depth--;
@@ -112,7 +118,10 @@ public sealed class TcpReader
             Console.WriteLine(text);
             return;
         }
-        if (msg is not null) OnMessage?.Invoke(msg);
+        if (msg is not null)
+        {
+            OnMessage?.Invoke(msg);
+        }
     }
 
     private static string UnwrapStringData(string text)

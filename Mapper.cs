@@ -16,7 +16,9 @@ public static class Mapper
     public static MappedMessage? Map(RawMessage raw)
     {
         if (raw is UpdateStateRaw u)
+        {
             return new MappedMessage(StateChannel, MapUpdateState(u.Data));
+        }
 
         var evt = MapEvent(raw);
         return evt is null ? null : new MappedMessage(EventsChannel, evt);
